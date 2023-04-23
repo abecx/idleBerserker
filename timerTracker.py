@@ -7,7 +7,9 @@ from collections import defaultdict
 import time
 import threading
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 userDataFile = os.environ.get('JSON_DATAFILE')
 client_secret = os.environ.get('CLIENT_SECRET')
 server_id = os.environ.get('SERVER_ID')
@@ -34,7 +36,6 @@ def userData(discordUserId,discordUserName):
             'alert': False,
             'notify': False,
             'boost': False,
-        print('starting timer lock')
             },
         'epicGate': {
             'startTime': 0,
@@ -93,7 +94,7 @@ async def dgTimers():
     timers = generateTimers()
     while not bot.is_closed():
         users = userData(False,False)
-        print('starting Timer lock')
+        print('dgTimer: starting Timer lock')
         file_lock.acquire()
         for timerName in timers:
             for userName in users:
@@ -105,7 +106,7 @@ async def dgTimers():
                         # Alert Triggered
                         users[userName]['timers'][timerName]['alert'] = not users[userName]['timers'][timerName]['alert']
                         if users[userName]['timers'][timerName]['notify'] is False:
-                            print(f'Notify {users[userName]["name"]} that {timerName} has completed')
+                            print(f'dgTimer: Notify {users[userName]["name"]} that {timerName} has completed')
                             msgUser = bot.get_user(int(userName))
                             message_response = await msgUser.send(f'{timerName} has completed. React with :thumbsup: for normal or :fire: for boosted to start a new timer.')
                             users[userName]['timers'][timerName]['notify'] = not users[userName]['timers'][timerName]['notify']
@@ -117,17 +118,17 @@ async def dgTimers():
                                 message = await msgUser.fetch_message(int(users[userName]['timers'][timerName]['notifyId']))
                                 for reaction in message.reactions:
                                     if reaction.emoji == '\N{THUMBS UP SIGN}':
-                                        print("removing message")
+                                        print("dgTimer: removing message")
                                         await message.delete()
-                                        print(f"Reseting timer for {timerName}.")
+                                        print(f"dgTimer: Reseting timer for {timerName}.")
                                         users[userName]['timers'][timerName]['notify'] = False
                                         users[userName]['timers'][timerName]['startTime'] = round(time.time())
                                         users[userName]['timers'][timerName]['alert'] = False
                                         users[userName]['timers'][timerName]['boost'] = False
                                     if reaction.emoji == '\U0001F525':
-                                        print("remove message")
+                                        print("dgTimer: remove message")
                                         await message.delete()
-                                        print(f"Reseting timer for {timerName} with boost.")
+                                        print(f"dgTimer: Reseting timer for {timerName} with boost.")
                                         users[userName]['timers'][timerName]['notify'] = False
                                         users[userName]['timers'][timerName]['startTime'] = round(time.time())
                                         users[userName]['timers'][timerName]['alert'] = False
@@ -138,7 +139,8 @@ async def dgTimers():
         with open(userDataFile, 'w') as f:
             json.dump(users,f)
         file_lock.release()
-        print("releaseing timer lock")
+        print("dgTimer:releaseing timer lock")
+        print("dgTimer: Sleeping 10 seconds")
         await asyncio.sleep(10)
 
 
