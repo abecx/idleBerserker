@@ -20,7 +20,7 @@ file_lock = threading.Lock()
 bot = commands.Bot(intents=intents,command_prefix='!')
 
 def userData(discordUserId,discordUserName):
-    print('getting userdata lock')
+    print('starting userdata lock')
     file_lock.acquire()
     defaultUserData = {'name': '', 'timers': {
 #        'debug': {
@@ -34,6 +34,7 @@ def userData(discordUserId,discordUserName):
             'alert': False,
             'notify': False,
             'boost': False,
+        print('starting timer lock')
             },
         'epicGate': {
             'startTime': 0,
@@ -70,6 +71,7 @@ def userData(discordUserId,discordUserName):
                 json.dump(data, f)
 
     file_lock.release()
+    print("releasing userdata lock")
     return data
 
 
@@ -78,7 +80,7 @@ def generateTimers():
     timers = {
  #   			'debug': { 'normal': 10, 'boost': 2 },
                 'uniqueGate': { 'normal': 10800, 'boost': 3600 },
-                'epicGate': { 'normal': 18000, 'boost': 3600 },
+                'epicGate': { 'normal': 18000, 'boost': 10800 },
                 'legendaryGate': { 'normal': 32400, 'boost': 25200 },
                 'mythicGate': { 'normal': 72000, 'boost': 64800 }
             }
@@ -90,26 +92,26 @@ async def dgTimers():
     await bot.wait_until_ready()
     timers = generateTimers()
     while not bot.is_closed():
-        print('getting timer filelock')
         users = userData(False,False)
+        print('starting Timer lock')
         file_lock.acquire()
         for timerName in timers:
             for userName in users:
                 if timerName in users[userName]['timers']:
                     key = 'normal' if users[userName]['timers'][timerName]['boost'] is False else 'boost'
-                    print(f'Checking timer: {users[userName]["name"]} {timerName}:{key}.')
+                    #print(f'Checking timer: {users[userName]["name"]} {timerName}:{key}.')
                     timerDifference = round(time.time()) - users[userName]['timers'][timerName]['startTime']
                     if timerDifference >= timers[timerName][key]:
                         # Alert Triggered
                         users[userName]['timers'][timerName]['alert'] = not users[userName]['timers'][timerName]['alert']
                         if users[userName]['timers'][timerName]['notify'] is False:
-                            print(f'Notify {userName} that {timerName} has completed')
+                            print(f'Notify {users[userName]["name"]} that {timerName} has completed')
                             msgUser = bot.get_user(int(userName))
                             message_response = await msgUser.send(f'{timerName} has completed. React with :thumbsup: for normal or :fire: for boosted to start a new timer.')
                             users[userName]['timers'][timerName]['notify'] = not users[userName]['timers'][timerName]['notify']
                             users[userName]['timers'][timerName]['notifyId'] = message_response.id
                         else:
-                            print(f'Checking to see if {userName} has reacted to {timerName}.')
+                            #print(f'Checking to see if {userName} has reacted to {timerName}.')
                             if users[userName]['timers'][timerName]['notifyId']:
                                 msgUser = bot.get_user(int(userName))
                                 message = await msgUser.fetch_message(int(users[userName]['timers'][timerName]['notifyId']))
@@ -136,7 +138,8 @@ async def dgTimers():
         with open(userDataFile, 'w') as f:
             json.dump(users,f)
         file_lock.release()
-        await asyncio.sleep(5)
+        print("releaseing timer lock")
+        await asyncio.sleep(10)
 
 
 @bot.event
