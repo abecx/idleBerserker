@@ -116,8 +116,6 @@ async def track(ctx, action=None):
         message = "Dimension Gate tracking has been disabled."
         trackValue = 0
         cursor.execute("INSERT INTO users (discordId, discordName, tracking) VALUES (?, ?, ?) ON CONFLICT (discordId) DO UPDATE SET tracking = ?", (discordId, discordName, trackValue, trackValue))
-        conn.commit()
-        conn.close()
 	
     if action is None:
         trackValue = 1
@@ -130,15 +128,14 @@ async def track(ctx, action=None):
             cursor.execute("INSERT INTO users (discordId, discordName, tracking) VALUES (?, ?, ?) ON CONFLICT (discordId) DO UPDATE SET tracking = ?", (discordId, discordName, trackValue, trackValue))
             for timerName in userTimers:
                 logger.info(f"Adding {timerName} with default for {discordName}")
-                cursor.execute("INSERT INTO timers (discordId, timerName, startTime, alert, notify, boost, notifyId) VALUES (?, ?, ?, ?, ?, ?, NULL) ON CONFLICT (discordId) DO UPDATE SET startTime = excluded.startTime, alert = excluded.alert, notify = excluded.notify, boost = excluded.boost, notifyId = NULL", (discordId, timerName, 0, False, False, False))
+                cursor.execute("INSERT INTO timers (discordId, timerName, startTime, alert, notify, boost, notifyId) VALUES (?, ?, ?, ?, ?, ?, NULL)", (discordId, timerName, 0, False, False, False))
             message = "Dimensional Gate Tracking has been enabled."
         else:
             logger.info(f"{discordName} is already being tracked, no action taken.")
             message = "Dimensional Gates are already being tracked for your user."
 
-        conn.commit()
-        conn.close()
-
+    conn.commit()
+    conn.close()
 
     await ctx.author.send(message)
 
