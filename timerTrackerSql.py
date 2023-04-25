@@ -9,8 +9,22 @@ import time
 import os
 from dotenv import load_dotenv
 
+# enable logging
+logger = logging.getLogger('dgTracker')
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
-logger = logging.getLogger(__name__)
+# file logging output
+file_handler = logging.FileHandler('logs/timerTracker.log')
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+# add a console handler
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
 
 load_dotenv()
 sqlite_data = os.environ.get('SQLITE_DATA')
