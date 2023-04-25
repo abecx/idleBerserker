@@ -51,8 +51,7 @@ async def track(ctx, action=None):
     conn = sqlite3.connect(sqlite_data)
     cursor = conn.cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS users ( discordId INTEGER PRIMARY KEY, discordName TEXT, tracking INTEGER)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS timers ( discordId INTEGER REFERENCES users(discordId), timerName TEXT, startTime INTEGER, alert INTEGER, notify INTEGER, boost INTEGER, notifyId INTEGER, PRIMARY KEY(name, startTime))")
-
+    cursor.execute("CREATE TABLE IF NOT EXISTS timers ( discordId INTEGER REFERENCES users(discordId), timerName TEXT, startTime INTEGER, alert INTEGER, notify INTEGER, boost INTEGER, notifyId INTEGER, PRIMARY KEY(timerName, startTime))")
 
     if action == 'remove':
         logger.info("Disabling tracking for {discordName}")
@@ -66,8 +65,8 @@ async def track(ctx, action=None):
     if action is None:
         trackValue = 1
         logger.info(f"Attempting to find records for {discordName}.")
-        cursor.execute("SELECT username from users WHERE discordId=?", (discordId,))
-        result = c.fetchone()
+        cursor.execute("SELECT discordName from users WHERE discordId=?", (discordId,))
+        result = cursor.fetchone()
 	
         if not result:
             logger.info(f"Adding {discordName} to the database.")
