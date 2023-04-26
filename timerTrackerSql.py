@@ -54,36 +54,42 @@ def commit():
 
 async def checkTimers():
     while True:
-        cursor.execute("SELECT timers.discordId, users.discordName as discordName, timers.timerName, timers.startTime, timers.alert, timers.notify, timers.boost, timers.notifyId from timers JOIN users ON timers.discordId = users.discordId where users.tracking = 1")
-        rows = cursor.fetchall()
-        for row in rows:
-            discordId, discordName, timerName, startTime, alert, notify, boost, notifyId = row
-            logger.debug(f"Checking timer: {discordName}: {timerName}")
-            if gateTimers[timerName]:
-                timeKey = 'normal' if boost == 0 else 'boost'
-                if gateTimers[timerName][timeKey] < round(time.time()) - startTime:
-                    cursor.execute('UPDATE timers SET alert = ? WHERE discordId = ? AND timerName = ?', (True, discordId, timerName))
-                    if notify == 0: 
-                        logger.debug(f"Notification: {timerName}:{timeKey} for {discordName}")
-                        sendMessage = bot.get_user(discordId)
-                        messageResponse = await sendMessage.send(f'{timerName} has completed. React with :thumbsup: for normal or :fire: for boosted to start a new timer.')
-                        logger.info(f'{discordName}: {timerName}:{timeKey} has completed.')
-                        cursor.execute('UPDATE timers SET notify = ?, notifyId = ? WHERE discordId = ? AND timerName = ?', (True, messageResponse.id, discordId, timerName))
-                    else:
-                        msgUser = bot.get_user(discordId)
-                        message = await msgUser.fetch_message(notifyId)
-                        for reaction in message.reactions:
-                            if reaction.emoji == '\N{THUMBS UP SIGN}':
-                                logger.debug(f"Removing message: {notifyId} / {discordName}")
-                                await message.delete()
-                                logger.info(f"Resetting {timerName}:normal for {discordName}.")
-                                cursor.execute('UPDATE timers SET notify = ?, startTime = ?, alert = ?, boost = ?, notifyId = NULL WHERE discordId = ? AND timerName = ?', (False, round(time.time()), False, False, discordId, timerName))
-                            if reaction.emoji == '\U0001F525':
-                                logger.debug(f"Removing message: {notifyId} / {discordName}")
-                                await message.delete()
-                                logger.info(f"Resetting {timerName}:boost for {discordName}.")
-                                cursor.execute('UPDATE timers SET notify = ?, startTime = ?, alert = ?, boost = ?, notifyId = NULL WHERE discordId = ? AND timerName = ?', (False, round(time.time()), False, True, discordId, timerName))
-        
+        try:
+            cursor.execute("SELECT timers.discordId, users.discordName as discordName, timers.timerName, timers.startTime, timers.alert, timers.notify, timers.boost, timers.notifyId from timers JOIN users ON timers.discordId = users.discordId where users.tracking = 1")
+            rows = cursor.fetchall()
+            for row in rows:
+                discordId, discordName, timerName, startTime, alert, notify, boost, notifyId = row
+                logger.debug(f"Checking timer: {discordName}: {timerName}")
+                if gateTimers[timerName]:
+                    timeKey = 'normal' if boost == 0 else 'boost'
+                    if gateTimers[timerName][timeKey] < round(time.time()) - startTime:
+                        cursor.execute('UPDATE timers SET alert = ? WHERE discordId = ? AND timerName = ?', (True, discordId, timerName))
+                        if notify == 0: 
+                            logger.debug(f"Notification: {timerName}:{timeKey} for {discordName}")
+                            sendMessage = bot.get_user(discordId)
+                            messageResponse = await sendMessage.send(f'{timerName} has completed. React with :thumbsup: for normal or :fire: for boosted to start a new timer.')
+                            logger.info(f'{discordName}: {timerName}:{timeKey} has completed.')
+                            cursor.execute('UPDATE timers SET notify = ?, notifyId = ? WHERE discordId = ? AND timerName = ?', (True, messageResponse.id, discordId, timerName))
+                        else:
+                            msgUser = bot.get_user(discordId)
+                            message = await msgUser.fetch_message(notifyId)
+                            for reaction in message.reactions:
+                                if reaction.emoji == '\N{THUMBS UP SIGN}':
+                                    logger.debug(f"Removing message: {notifyId} / {discordName}")
+                                    await message.delete()
+                                    logger.info(f"Resetting {timerName}:normal for {discordName}.")
+                                    cursor.execute('UPDATE timers SET notify = ?, startTime = ?, alert = ?, boost = ?, notifyId = NULL WHERE discordId = ? AND timerName = ?', (False, round(time.time()), False, False, discordId, timerName))
+                                if reaction.emoji == '\U0001F525':
+                                    logger.debug(f"Removing message: {notifyId} / {discordName}")
+                                    await message.delete()
+                                    logger.info(f"Resetting {timerName}:boost for {discordName}.")
+                                    cursor.execute('UPDATE timers SET notify = ?, startTime = ?, alert = ?, boost = ?, notifyId = NULL WHERE discordId = ? AND timerName = ?', (False, round(time.time()), False, True, discordId, timerName))
+        except ClientOSError as e:
+            logger.error(f"Encountered a network error: {e}")
+            await asyncio.sleep(5) # wait before trying again
+        except Exception as e:
+            logger.error(f"Encountered an error: {e}")
+            await asyncio.sleep(5)     
         logger.debug("Committing timer changes.")
         commit()   
         await asyncio.sleep(5)
