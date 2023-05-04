@@ -8,6 +8,9 @@ import json
 import time
 import os
 from dotenv import load_dotenv
+from aiohttp import ClientOSError
+from discord.errors import HTTPException
+
 
 # enable logging
 logger = logging.getLogger('dgTracker')
@@ -100,7 +103,7 @@ async def on_ready():
     # debug, info, warning, error, critical
     logger.info("Booting...")
     logger.info("creating tables")
-    cursor.execute("CREATE TABLE IF NOT EXISTS users ( discordId INTEGER PRIMARY KEY, discordName TEXT, tracking INTEGER)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS users (discordId INTEGER PRIMARY KEY, discordName TEXT, tracking INTEGER, guild TEXT DEFAULT NULL, active INTEGER DEFAULT 0)")
     cursor.execute("CREATE TABLE IF NOT EXISTS timers (discordId INTEGER REFERENCES users(discordId), timerName TEXT, startTime INTEGER, alert INTEGER, notify INTEGER, boost INTEGER, notifyId INTEGER, PRIMARY KEY(discordId, timerName))")
     commit()
     logger.info("Starting checkTimers async loop.")
